@@ -1,0 +1,2 @@
+# Schedulo
+Time Table Generator
