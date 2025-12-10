@@ -4,7 +4,6 @@ import { api } from "../api";
 
 export default function ClassForm({ onCreated }) {
   const [form, setForm] = useState({
-    name: "",
     department: "",
     year: 1,
     section: "A",
@@ -40,12 +39,12 @@ export default function ClassForm({ onCreated }) {
     try {
       await api.addClass(form);
       setForm({
-        name: "",
         department: "",
         year: 1,
         section: "A",
         subjects: []
       });
+      alert("Class created successfully!");
       onCreated?.();
     } catch (err) {
       alert("Error creating class: " + (err.message || JSON.stringify(err)));
@@ -56,14 +55,6 @@ export default function ClassForm({ onCreated }) {
     <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
       <h2 className="text-lg font-semibold mb-4">Create Class</h2>
       <form onSubmit={handleSubmit} className="space-y-3">
-        <input
-          type="text"
-          placeholder="Class Name (e.g., CSE-2A)"
-          value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
-          required
-          className="w-full border border-gray-300 rounded px-3 py-2"
-        />
         <select
           value={form.department}
           onChange={(e) => setForm({ ...form, department: e.target.value })}
