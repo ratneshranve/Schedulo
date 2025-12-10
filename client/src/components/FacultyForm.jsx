@@ -33,7 +33,15 @@ export default function FacultyForm({ onCreated }) {
     }
     setLoading(true);
     try {
-      await api.addFaculty(form);
+      // Only send non-empty department
+      const dataToSend = { ...form };
+      if (!dataToSend.department) {
+        delete dataToSend.department;
+      }
+      if (!dataToSend.email) {
+        delete dataToSend.email;
+      }
+      await api.addFaculty(dataToSend);
       setForm({
         name: "",
         email: "",
@@ -150,4 +158,4 @@ export default function FacultyForm({ onCreated }) {
     </div>
   );
 }
-}
+
