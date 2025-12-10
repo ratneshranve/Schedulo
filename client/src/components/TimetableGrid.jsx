@@ -73,8 +73,21 @@ export default function TimetableGrid({ classId }) {
                   >
                     {cell ? (
                       <div>
-                        <div className="font-semibold">{cell.subject?.name || "–"}</div>
-                        <div className="text-gray-600">{cell.faculty?.shortName || "–"}</div>
+                        <div className="font-semibold">
+                          {(() => {
+                            if (typeof cell.subject === 'object' && cell.subject?.name) return cell.subject.name;
+                            if (typeof cell.subject === 'string') return cell.subject;
+                            return "–";
+                          })()}
+                        </div>
+                        <div className="text-gray-600">
+                          {(() => {
+                            if (typeof cell.faculty === 'object' && cell.faculty?.shortName) return cell.faculty.shortName;
+                            if (typeof cell.faculty === 'object' && cell.faculty?.name) return cell.faculty.name;
+                            if (typeof cell.faculty === 'string') return cell.faculty;
+                            return "–";
+                          })()}
+                        </div>
                       </div>
                     ) : (
                       "–"

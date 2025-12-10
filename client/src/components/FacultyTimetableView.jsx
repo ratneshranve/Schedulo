@@ -76,9 +76,18 @@ export default function FacultyTimetableView({ facultyId }) {
                   >
                     {cell && (
                       <div className="space-y-1">
-                        <div className="font-semibold">{cell.subject?.name || "Unknown"}</div>
+                        <div className="font-semibold">
+                          {(() => {
+                            if (typeof cell.subject === 'object' && cell.subject?.name) return cell.subject.name;
+                            if (typeof cell.subject === 'string') return cell.subject;
+                            return "Unknown";
+                          })()}
+                        </div>
                         <div className="text-xs text-gray-600">
-                          {cell.subject?.code || ""}
+                          {(() => {
+                            if (typeof cell.subject === 'object' && cell.subject?.code) return cell.subject.code;
+                            return "";
+                          })()}
                         </div>
                         {cell.isLab && <div className="text-xs text-purple-600 font-bold">LAB</div>}
                       </div>
