@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [classes, setClasses] = useState([]);
   const [faculties, setFaculties] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedFaculty, setSelectedFaculty] = useState(null);
   const [generating, setGenerating] = useState(false);
@@ -24,12 +25,14 @@ export default function Dashboard() {
 
   const reload = async () => {
     try {
-      const [classList, facultyList] = await Promise.all([
+      const [classList, facultyList, deptList] = await Promise.all([
         api.getClasses(),
-        api.getFaculty()
+        api.getFaculty(),
+        api.getDepartments()
       ]);
       setClasses(classList);
       setFaculties(facultyList);
+      setDepartments(deptList);
     } catch (err) {
       console.error("Error loading data:", err);
     }
@@ -133,7 +136,18 @@ export default function Dashboard() {
               <DepartmentForm onCreated={reload} />
               <div className="bg-white p-6 rounded shadow">
                 <h3 className="text-lg font-bold mb-4">Departments Created</h3>
-                <p className="text-gray-600">Departments will appear here after creation.</p>
+                {departments && departments.length > 0 ? (
+                  <div className="space-y-2">
+                    {departments.map((dept) => (
+                      <div key={dept._id} className="border-l-4 border-blue-500 pl-3 py-2">
+                        <div className="font-semibold">{dept.name}</div>
+                        <div className="text-sm text-gray-600">Code: {dept.code}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-600">No departments created yet.</p>
+                )}
               </div>
             </div>
             <button
