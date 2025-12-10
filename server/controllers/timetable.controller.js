@@ -10,7 +10,11 @@ export const generateAll = async (req, res, next) => {
     const { days, periodsPerDay } = req.body || {};
     const timetables = await generateAllTimetables({ days, periodsPerDay });
     console.log("[TimetableController] Timetables generated successfully");
-    const plainTimetables = timetables.map(tt => tt.toObject ? tt.toObject() : tt);
+    // Convert to plain objects and serialize to ensure no Mongoose objects are included
+    const plainTimetables = timetables.map(tt => {
+      const obj = tt.toObject ? tt.toObject() : tt;
+      return JSON.parse(JSON.stringify(obj));
+    });
     res.status(201).json({ success: true, timetables: plainTimetables, message: "Timetables generated successfully" });
   } catch (err) {
     console.error("[TimetableController] Error during generation:", err.message);
@@ -38,7 +42,8 @@ export const getTimetableForClass = async (req, res, next) => {
     if (!tt) return res.status(404).json({ message: "No timetable found" });
     await tt.populate("periods.subject");
     await tt.populate("periods.faculty");
-    res.json(tt.toObject ? tt.toObject() : tt);
+    const plain = tt.toObject ? tt.toObject() : tt;
+    res.json(JSON.parse(JSON.stringify(plain)));
   } catch (err) {
     next(err);
   }
@@ -52,7 +57,8 @@ export const getTimetableForFaculty = async (req, res, next) => {
     if (!tt) return res.status(404).json({ message: "No faculty timetable found" });
     await tt.populate("periods.subject");
     await tt.populate("periods.faculty");
-    res.json(tt.toObject ? tt.toObject() : tt);
+    const plain = tt.toObject ? tt.toObject() : tt;
+    res.json(JSON.parse(JSON.stringify(plain)));
   } catch (err) {
     next(err);
   }
@@ -66,7 +72,7 @@ export const getAllTimetables = async (req, res, next) => {
       .populate("periods.subject")
       .populate("periods.faculty");
     const plainTimetables = timetables.map(tt => tt.toObject ? tt.toObject() : tt);
-    res.json(plainTimetables);
+    res.json(plainTimetables.map(t => JSON.parse(JSON.stringify(t))));
   } catch (err) {
     next(err);
   }
