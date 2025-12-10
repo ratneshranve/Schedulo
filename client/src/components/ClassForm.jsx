@@ -11,9 +11,11 @@ export default function ClassForm({ onCreated }) {
     subjects: []
   });
   const [allSubjects, setAllSubjects] = useState([]);
+  const [departments, setDepartments] = useState([]);
 
   useEffect(() => {
     api.getSubjects().then(setAllSubjects).catch(console.error);
+    api.getDepartments().then(setDepartments).catch(console.error);
   }, []);
 
   const toggleSubject = (id) => {
@@ -54,13 +56,19 @@ export default function ClassForm({ onCreated }) {
           required
           className="w-full border border-gray-300 rounded px-3 py-2"
         />
-        <input
-          type="text"
-          placeholder="Department"
+        <select
           value={form.department}
           onChange={(e) => setForm({ ...form, department: e.target.value })}
+          required
           className="w-full border border-gray-300 rounded px-3 py-2"
-        />
+        >
+          <option value="">-- Select Department --</option>
+          {departments.map((d) => (
+            <option key={d._id} value={d._id}>
+              {d.name} ({d.code})
+            </option>
+          ))}
+        </select>
         <div className="grid grid-cols-2 gap-2">
           <select
             value={form.year}
