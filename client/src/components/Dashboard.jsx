@@ -50,10 +50,15 @@ export default function Dashboard() {
         setTimeout(() => setCurrentStep(8), 1500);
         reload();
       } else {
-        setError(res.diagnostics || res.error);
+        // Pass the entire error object to DiagnosticsModal
+        setError(res);
       }
     } catch (err) {
-      setError(err);
+      // Convert error to object format
+      setError({
+        error: typeof err === 'string' ? err : err.message || JSON.stringify(err),
+        diagnostics: err.diagnostics || null
+      });
       console.error("Generation error:", err);
     } finally {
       setGenerating(false);
