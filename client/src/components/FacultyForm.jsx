@@ -5,9 +5,10 @@ import { api } from "../api";
 export default function FacultyForm({ onCreated }) {
   const [form, setForm] = useState({
     name: "",
-    shortName: "",
-    maxLoadPerDay: 4,
-    maxLoadPerWeek: 20,
+    email: "",
+    department: "",
+    weeklyLoadLimit: 20,
+    maxPeriodsPerDay: 6,
     availability: {
       Mon: [1, 2, 3, 4, 5, 6, 7, 8],
       Tue: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -17,16 +18,28 @@ export default function FacultyForm({ onCreated }) {
     }
   });
   const [showAvail, setShowAvail] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.name) {
+      alert("Faculty name is required");
+      return;
+    }
+    setLoading(true);
     try {
       await api.addFaculty(form);
       setForm({
         name: "",
-        shortName: "",
-        maxLoadPerDay: 4,
-        maxLoadPerWeek: 20,
+        email: "",
+        department: "",
+        weeklyLoadLimit: 20,
+        maxPeriodsPerDay: 6,
         availability: {
           Mon: [1, 2, 3, 4, 5, 6, 7, 8],
           Tue: [1, 2, 3, 4, 5, 6, 7, 8],
@@ -35,9 +48,12 @@ export default function FacultyForm({ onCreated }) {
           Fri: [1, 2, 3, 4, 5, 6, 7, 8]
         }
       });
-      onCreated?.();
+      alert("Faculty created successfully!");
+      if (onCreated) onCreated();
     } catch (err) {
       alert("Error creating faculty: " + (err.message || JSON.stringify(err)));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,41 +75,47 @@ export default function FacultyForm({ onCreated }) {
       <form onSubmit={handleSubmit} className="space-y-3">
         <input
           type="text"
-          placeholder="Full Name"
+          name="name"
+          placeholder="Full Name *"
           value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onChange={handleInputChange}
           required
-          className="w-full border border-gray-300 rounded px-3 py-2"
+          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
         />
         <input
-          type="text"
-          placeholder="Short Name"
-          value={form.shortName}
-          onChange={(e) => setForm({ ...form, shortName: e.target.value })}
-          className="w-full border border-gray-300 rounded px-3 py-2"
+          type="email"
+          name="email"
+          placeholder="Email (optional)"
+          value={form.email}
+          onChange={handleInputChange}
+          className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
         />
         <div className="grid grid-cols-2 gap-2">
           <input
             type="number"
-            placeholder="Max per Day"
-            value={form.maxLoadPerDay}
-            onChange={(e) => setForm({ ...form, maxLoadPerDay: parseInt(e.target.value) })}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            name="weeklyLoadLimit"
+            placeholder="Weekly Load Limit"
+            value={form.weeklyLoadLimit}
+            onChange={handleInputChange}
+            min="1"
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
           />
           <input
             type="number"
-            placeholder="Max per Week"
-            value={form.maxLoadPerWeek}
-            onChange={(e) => setForm({ ...form, maxLoadPerWeek: parseInt(e.target.value) })}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            name="maxPeriodsPerDay"
+            placeholder="Max Periods/Day"
+            value={form.maxPeriodsPerDay}
+            onChange={handleInputChange}
+            min="1"
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
           />
         </div>
         <button
           type="button"
           onClick={() => setShowAvail(!showAvail)}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-blue-600 hover:underline font-semibold"
         >
-          {showAvail ? "Hide" : "Edit"} Availability
+          {showAvail ? "▼ Hide" : "▶ Edit"} Availability
         </button>
         {showAvail && (
           <div className="border border-gray-300 p-3 rounded bg-gray-50 text-sm">
@@ -107,10 +129,10 @@ export default function FacultyForm({ onCreated }) {
                       key={p}
                       type="button"
                       onClick={() => togglePeriod(day, p)}
-                      className={`w-8 h-8 border rounded ${
+                      className={`w-8 h-8 border rounded text-xs font-bold transition ${
                         form.availability[day].includes(p)
-                          ? "bg-green-500 text-white"
-                          : "bg-gray-200"
+                          ? "bg-green-500 text-white border-green-600"
+                          : "bg-gray-200 border-gray-400 hover:bg-gray-300"
                       }`}
                     >
                       {p}
@@ -121,8 +143,13 @@ export default function FacultyForm({ onCreated }) {
             ))}
           </div>
         )}
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-          Add Faculty
+        <button type="submit" disabled={loading} className="w-full bg-blue-600 text-white py-2 rounded font-semibold hover:bg-blue-700 disabled:bg-gray-400 text-sm">
+          {loading ? "Creating..." : "Create Faculty"}
+        </button>
+      </form>
+    </div>
+  );
+}
         </button>
       </form>
     </div>

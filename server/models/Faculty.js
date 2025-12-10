@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 const FacultySchema = new mongoose.Schema({
   name: { type: String, required: true },
-  email: { type: String, unique: true },
+  email: { type: String, unique: true, sparse: true },
   department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
   subjects: [
     {
