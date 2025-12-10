@@ -45,8 +45,24 @@ export async function generateAllTimetables(options = {}) {
   if (!classes || classes.length === 0) {
     const err = { 
       success: false, 
-      error: "No classes found", 
-      diagnostics: { tasksCount: 0, labCount: 0 } 
+      error: "No classes found in database. Please create classes first.", 
+      diagnostics: { classCount: 0, taskCount: 0, labCount: 0 } 
+    };
+    throw new Error(JSON.stringify(err));
+  }
+
+  // Check if classes have subjects
+  const classesWithSubjects = classes.filter(c => c.subjects && c.subjects.length > 0);
+  if (classesWithSubjects.length === 0) {
+    const err = { 
+      success: false, 
+      error: "No subjects assigned to any class. Please assign subjects to classes.", 
+      diagnostics: { 
+        classCount: classes.length, 
+        classesWithSubjects: 0,
+        taskCount: 0, 
+        labCount: 0 
+      } 
     };
     throw new Error(JSON.stringify(err));
   }

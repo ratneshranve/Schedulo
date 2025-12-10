@@ -29,6 +29,14 @@ export default function ClassForm({ onCreated }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!form.department) {
+      alert("Please select a department");
+      return;
+    }
+    if (form.subjects.length === 0) {
+      alert("Please assign at least one subject to the class");
+      return;
+    }
     try {
       await api.addClass(form);
       setForm({
