@@ -33,10 +33,10 @@ export const generateAll = async (req, res, next) => {
 export const getTimetableForClass = async (req, res, next) => {
   try {
     const { classId } = req.params;
-    const tt = await Timetable.findOne({ type: "class", referenceId: classId })
-      .populate("periods.subject")
-      .populate("periods.faculty");
+    let tt = await Timetable.findOne({ type: "class", referenceId: classId });
     if (!tt) return res.status(404).json({ message: "No timetable found" });
+    await tt.populate("periods.subject");
+    await tt.populate("periods.faculty");
     res.json(tt);
   } catch (err) {
     next(err);
@@ -47,10 +47,10 @@ export const getTimetableForClass = async (req, res, next) => {
 export const getTimetableForFaculty = async (req, res, next) => {
   try {
     const { facultyId } = req.params;
-    const tt = await Timetable.findOne({ type: "faculty", referenceId: facultyId })
-      .populate("periods.subject")
-      .populate("periods.faculty");
+    let tt = await Timetable.findOne({ type: "faculty", referenceId: facultyId });
     if (!tt) return res.status(404).json({ message: "No faculty timetable found" });
+    await tt.populate("periods.subject");
+    await tt.populate("periods.faculty");
     res.json(tt);
   } catch (err) {
     next(err);

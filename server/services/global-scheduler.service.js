@@ -466,7 +466,8 @@ export async function generateAllTimetables(options = {}) {
       config: config._id || null
     });
     await tt.save();
-    await tt.populate("periods.subject").populate("periods.faculty");
+    await tt.populate("periods.subject");
+    await tt.populate("periods.faculty");
     savedTimetables.push(tt);
   }
 
