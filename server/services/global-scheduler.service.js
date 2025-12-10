@@ -209,18 +209,7 @@ export async function generateAllTimetables(options = {}) {
     // Check bounds
     if (periodIdx + task.length > periodsPerDay) return false;
 
-    // Check lab start slot constraint
-    if (task.length > 1) {
-      const oneBasedPeriod = periodIdx + 1;
-      if (!labAllowedStarts.includes(oneBasedPeriod)) return false;
-    }
-
-    // Check break periods
-    for (let k = 0; k < task.length; k++) {
-      if (isBreakPeriod(dayIdx, periodIdx + k)) return false;
-    }
-
-    // Check class conflicts
+    // Check class conflicts (primary hard constraint)
     const week = classWeek[classId];
     for (let k = 0; k < task.length; k++) {
       if (week[dayIdx][periodIdx + k] !== null) return false;
@@ -237,34 +226,6 @@ export async function generateAllTimetables(options = {}) {
         if (!facultyAvailable(fid, dayIdx, periodIdx + k)) return false;
         if (facultyBusy[fid].has(facultySlotKey(dayIdx, periodIdx + k))) return false;
       }
-
-      // Faculty daily load - soft constraint, allow some overage
-      if (fLoad.daily[dayIdx] + task.length > fLoad.maxPeriodsPerDay + 3) return false;
-    }
-
-    // Check room constraints (for labs)
-    if (task.isLab && task.roomType === "lab") {
-      // Only assign to lab rooms
-      let foundLabRoom = false;
-      for (const labRoom of labRooms) {
-        const rid = labRoom._id.toString();
-        let canUse = true;
-        for (let k = 0; k < task.length; k++) {
-          if (roomWeek[rid][dayIdx][periodIdx + k] !== null) {
-            canUse = false;
-            break;
-          }
-          if (!roomAvailable(rid, dayIdx, periodIdx + k)) {
-            canUse = false;
-            break;
-          }
-        }
-        if (canUse) {
-          foundLabRoom = true;
-          break;
-        }
-      }
-      if (!foundLabRoom) return false;
     }
 
     return true;
