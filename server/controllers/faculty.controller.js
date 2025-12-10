@@ -13,7 +13,15 @@ export const getAllFaculty = async (req, res, next) => {
 
 export const createFaculty = async (req, res, next) => {
   try {
-    const faculty = new Faculty(req.body);
+    const data = { ...req.body };
+    // Ensure empty strings are removed to avoid E11000 on sparse fields
+    if (!data.email || data.email.trim() === "") {
+      delete data.email;
+    }
+    if (!data.department || data.department.trim() === "") {
+      delete data.department;
+    }
+    const faculty = new Faculty(data);
     await faculty.save();
     await faculty.populate("department");
     res.status(201).json(faculty);
@@ -24,7 +32,15 @@ export const createFaculty = async (req, res, next) => {
 
 export const updateFaculty = async (req, res, next) => {
   try {
-    const faculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, { new: true })
+    const data = { ...req.body };
+    // Ensure empty strings are removed to avoid E11000 on sparse fields
+    if (!data.email || data.email.trim() === "") {
+      delete data.email;
+    }
+    if (!data.department || data.department.trim() === "") {
+      delete data.department;
+    }
+    const faculty = await Faculty.findByIdAndUpdate(req.params.id, data, { new: true })
       .populate("department");
     res.json(faculty);
   } catch (err) {
