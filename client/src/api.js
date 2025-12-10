@@ -120,7 +120,13 @@ async function handleResponse(res) {
   }
   const data = await res.json();
   if (!res.ok) {
-    throw data; // If error object, it will have error & diagnostics
+    // Ensure error object has string properties
+    const errorObj = {
+      error: typeof data.error === 'string' ? data.error : JSON.stringify(data.error || 'Unknown error'),
+      success: data.success || false,
+      diagnostics: data.diagnostics || null
+    };
+    throw errorObj;
   }
   return data;
 }
