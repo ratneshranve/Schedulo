@@ -365,9 +365,18 @@ export async function generateAllTimetables(options = {}) {
 
   const maxAttempts = 5000000;
   let attempts = 0;
+  const startTime = Date.now();
+  const timeoutMs = 30000; // 30 second timeout
 
   async function backtrack(index) {
     attempts++;
+    
+    // Check timeout
+    if (Date.now() - startTime > timeoutMs) {
+      console.log(`[Scheduler] Timeout reached after ${attempts} attempts and ${Date.now() - startTime}ms`);
+      return false;
+    }
+    
     if (attempts > maxAttempts) {
       console.log(`[Scheduler] Max attempts reached: ${attempts}`);
       return false;
@@ -394,7 +403,7 @@ export async function generateAllTimetables(options = {}) {
   console.log(`[Scheduler] Starting backtracking with ${tasks.length} tasks...`);
   const ok = await backtrack(0);
   console.log(`[Scheduler] Backtracking completed. Result: ${ok ? 'SUCCESS' : 'FAILED'}`);
-  console.log(`[Scheduler] Total attempts: ${attempts}`);
+  console.log(`[Scheduler] Total attempts: ${attempts}, Time: ${Date.now() - startTime}ms`);
 
   if (!ok) {
     const diag = {

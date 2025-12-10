@@ -6,15 +6,25 @@ import { generateAllTimetables } from "../services/global-scheduler.service.js";
 // POST /api/timetable/generate-all
 export const generateAll = async (req, res, next) => {
   try {
+    console.log("[TimetableController] Generate request received");
     const { days, periodsPerDay } = req.body || {};
     const timetables = await generateAllTimetables({ days, periodsPerDay });
+    console.log("[TimetableController] Timetables generated successfully");
     res.status(201).json({ success: true, timetables, message: "Timetables generated successfully" });
   } catch (err) {
+    console.error("[TimetableController] Error during generation:", err.message);
     try {
       const parsed = JSON.parse(err.message);
       res.status(400).json(parsed);
     } catch {
-      next(err);
+      res.status(500).json({ 
+        success: false, 
+        error: err.message || "Scheduling failed", 
+        diagnostics: { 
+          originalError: err.toString(),
+          stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        } 
+      });
     }
   }
 };
