@@ -7,7 +7,7 @@ export default function SubjectForm({ onCreated }) {
     name: "",
     code: "",
     type: "lecture",
-    sessionsPerWeek: 3,
+    sessionsPerWeek: 1,
     labContinuousPeriods: 2,
     faculty: []
   });
@@ -25,7 +25,7 @@ export default function SubjectForm({ onCreated }) {
         name: "",
         code: "",
         type: "lecture",
-        sessionsPerWeek: 3,
+        sessionsPerWeek: 1,
         labContinuousPeriods: 2,
         faculty: []
       });

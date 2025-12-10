@@ -232,26 +232,14 @@ export async function generateAllTimetables(options = {}) {
       const fLoad = facultyLoad[fid];
       if (!fLoad) return false;
 
-      // Faculty availability
+      // Faculty availability - hard constraint
       for (let k = 0; k < task.length; k++) {
         if (!facultyAvailable(fid, dayIdx, periodIdx + k)) return false;
         if (facultyBusy[fid].has(facultySlotKey(dayIdx, periodIdx + k))) return false;
       }
 
-      // Faculty daily load
-      if (fLoad.daily[dayIdx] + task.length > fLoad.maxPeriodsPerDay) return false;
-
-      // Faculty weekly load
-      if (fLoad.weekly + task.length > fLoad.weeklyLoadLimit) return false;
-
-      // Consecutive periods limit
-      const lastPeriod = fLoad.lastPeriodPerDay[dayIdx];
-      if (lastPeriod >= 0) {
-        const consecutiveCount = periodIdx - lastPeriod - 1;
-        if (lastPeriod + 1 === periodIdx && consecutiveCount >= maxConsecutivePeriodsForFaculty) {
-          return false;
-        }
-      }
+      // Faculty daily load - soft constraint, allow some overage
+      if (fLoad.daily[dayIdx] + task.length > fLoad.maxPeriodsPerDay + 3) return false;
     }
 
     // Check room constraints (for labs)
@@ -363,10 +351,10 @@ export async function generateAllTimetables(options = {}) {
     }
   }
 
-  const maxAttempts = 100000; // Reduced from 5M to fail faster and diagnose issues
+  const maxAttempts = 50000; // Reduced further
   let attempts = 0;
   const startTime = Date.now();
-  const timeoutMs = 10000; // Reduced from 30s to 10s
+  const timeoutMs = 5000; // 5 second timeout
 
   async function backtrack(index) {
     attempts++;
@@ -389,13 +377,26 @@ export async function generateAllTimetables(options = {}) {
     const task = tasks[index];
     const classId = task.classId;
 
+    // Randomize slot selection to avoid getting stuck
+    const slots = [];
     for (let d = 0; d < daysCount; d++) {
       for (let p = 0; p < periodsPerDay; p++) {
-        if (!canPlace(task, classId, d, p)) continue;
-        place(task, classId, d, p);
-        if (await backtrack(index + 1)) return true;
-        unplace(task, classId, d, p);
+        if (canPlace(task, classId, d, p)) {
+          slots.push({ d, p });
+        }
       }
+    }
+
+    // Try slots in random order
+    for (let i = slots.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [slots[i], slots[j]] = [slots[j], slots[i]];
+    }
+
+    for (const { d, p } of slots) {
+      place(task, classId, d, p);
+      if (await backtrack(index + 1)) return true;
+      unplace(task, classId, d, p);
     }
     return false;
   }
