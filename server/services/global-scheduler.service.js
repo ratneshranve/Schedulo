@@ -363,10 +363,10 @@ export async function generateAllTimetables(options = {}) {
     }
   }
 
-  const maxAttempts = 5000000;
+  const maxAttempts = 100000; // Reduced from 5M to fail faster and diagnose issues
   let attempts = 0;
   const startTime = Date.now();
-  const timeoutMs = 30000; // 30 second timeout
+  const timeoutMs = 10000; // Reduced from 30s to 10s
 
   async function backtrack(index) {
     attempts++;
@@ -410,7 +410,8 @@ export async function generateAllTimetables(options = {}) {
       totalTasks: tasks.length,
       labTasks: labCount,
       attempts,
-      maxAttempts
+      maxAttempts,
+      elapsedTime: Date.now() - startTime
     };
 
     // Identify problematic tasks
@@ -431,34 +432,39 @@ export async function generateAllTimetables(options = {}) {
           task: task.subjectName,
           class: task.className,
           faculty: task.facultyName,
-          reason: "No valid placement found (check availability, load limits, lab rooms, or breaks)"
+          length: task.length,
+          isLab: task.isLab,
+          reason: "No valid placement found (check faculty availability, load limits, or constraints)"
         });
       }
     }
 
-    // Check faculty overload
-    const overloadedFaculty = [];
+    // Check faculty availability
+    const facultyStatus = [];
     for (const fid in facultyLoad) {
       const f = facultyLoad[fid];
+      const faculty = faculties.find(x => x._id.toString() === fid);
       const requiredSlots = tasks.filter(t => t.facultyId === fid).reduce((s, t) => s + t.length, 0);
       const availableSlots = daysCount * periodsPerDay;
-      if (requiredSlots > availableSlots) {
-        const faculty = faculties.find(x => x._id.toString() === fid);
-        overloadedFaculty.push({
-          name: faculty ? faculty.name : fid,
-          requiredSlots,
-          availableSlots,
-          suggestion: `Increase periodsPerDay or reduce subject sessions for this faculty`
-        });
-      }
+      
+      facultyStatus.push({
+        name: faculty ? faculty.name : fid,
+        requiredSlots,
+        availableSlots,
+        weeklyLoadLimit: f.weeklyLoadLimit,
+        maxPeriodsPerDay: f.maxPeriodsPerDay,
+        availability: f.availability,
+        overloaded: requiredSlots > availableSlots
+      });
     }
 
-    diag.problematicTasks = problematicTasks;
-    diag.overloadedFaculty = overloadedFaculty;
+    diag.problematicTasks = problematicTasks.slice(0, 10); // First 10 problematic
+    diag.facultyStatus = facultyStatus;
+    diag.suggestion = "Check if: (1) Faculty have availability set for all days, (2) Load limits are sufficient, (3) Subjects have reasonable sessions count";
 
     const err = {
       success: false,
-      error: `Scheduling failed after ${attempts} attempts. Check diagnostics for conflicts.`,
+      error: `Scheduling failed after ${attempts} attempts in ${Date.now() - startTime}ms. Check diagnostics for conflicts.`,
       diagnostics: diag
     };
     throw new Error(JSON.stringify(err));
