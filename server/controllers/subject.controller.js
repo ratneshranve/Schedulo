@@ -27,7 +27,7 @@ export const createSubject = async (req, res, next) => {
   try {
     const subject = new Subject(req.body);
     await subject.save();
-    await subject.populate("faculty").populate("department");
+    await subject.populate("faculty");
     res.status(201).json(subject);
   } catch (err) {
     next(err);

@@ -4,7 +4,7 @@ import Faculty from "../models/Faculty.js";
 
 export const getAllFaculty = async (req, res, next) => {
   try {
-    const faculty = await Faculty.find().populate("department").populate("subjects.subject");
+    const faculty = await Faculty.find().populate("department");
     res.json(faculty);
   } catch (err) {
     next(err);
@@ -15,7 +15,7 @@ export const createFaculty = async (req, res, next) => {
   try {
     const faculty = new Faculty(req.body);
     await faculty.save();
-    await faculty.populate("department").populate("subjects.subject");
+    await faculty.populate("department");
     res.status(201).json(faculty);
   } catch (err) {
     next(err);
@@ -25,8 +25,7 @@ export const createFaculty = async (req, res, next) => {
 export const updateFaculty = async (req, res, next) => {
   try {
     const faculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, { new: true })
-      .populate("department")
-      .populate("subjects.subject");
+      .populate("department");
     res.json(faculty);
   } catch (err) {
     next(err);
