@@ -8,7 +8,11 @@ export default function ClassCard({ cls, isSelected, onSelect }) {
       }`}
     >
       <h3 className="font-bold text-lg">{cls.name}</h3>
-      {cls.department && <p className="text-sm text-gray-600">{cls.department}</p>}
+      {cls.department && (
+        <p className="text-sm text-gray-600">
+          {typeof cls.department === 'object' ? cls.department.name : cls.department}
+        </p>
+      )}
       <p className="text-sm text-gray-500 mt-1">Year {cls.year}, Section {cls.section}</p>
       <p className="text-xs text-gray-600 mt-2">
         {cls.subjects?.length || 0} subject(s)
