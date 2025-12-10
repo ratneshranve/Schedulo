@@ -150,8 +150,4 @@ export default function FacultyForm({ onCreated }) {
     </div>
   );
 }
-        </button>
-      </form>
-    </div>
-  );
 }
