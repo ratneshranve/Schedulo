@@ -1,43 +1,53 @@
 // controllers/faculty.controller.js
-import "../models/connection.js"; // loads DB connection
+import "../models/connection.js";
 import Faculty from "../models/Faculty.js";
 
-// GET /api/faculty
 export const getAllFaculty = async (req, res, next) => {
   try {
-    const list = await Faculty.find();
-    res.json(list);
+    const faculty = await Faculty.find().populate("department").populate("subjects.subject");
+    res.json(faculty);
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/faculty
 export const createFaculty = async (req, res, next) => {
   try {
-    const f = new Faculty(req.body);
-    await f.save();
-    res.status(201).json(f);
+    const faculty = new Faculty(req.body);
+    await faculty.save();
+    await faculty.populate("department").populate("subjects.subject");
+    res.status(201).json(faculty);
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/faculty/:id
 export const updateFaculty = async (req, res, next) => {
   try {
-    const updated = await Faculty.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    const faculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, { new: true })
+      .populate("department")
+      .populate("subjects.subject");
+    res.json(faculty);
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/faculty/:id
 export const deleteFaculty = async (req, res, next) => {
   try {
     await Faculty.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
+    res.json({ message: "Faculty deleted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const updateAvailability = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { availability } = req.body;
+    const faculty = await Faculty.findByIdAndUpdate(id, { availability }, { new: true });
+    res.json(faculty);
   } catch (err) {
     next(err);
   }

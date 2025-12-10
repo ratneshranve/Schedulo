@@ -1,69 +1,84 @@
-import React from "react";
+import { useState, useEffect } from "react";
+import { api } from "../api";
 
-/**
- * timetable object shape:
- * {
- *  classRoom: { ... },
- *  periods: [{ day: "Mon", periodIndex: 0, subject: {_id/...} or subject: id, faculty: id }]
- * }
- *
- * We'll render a grid: rows = days, columns = periods (1..8)
- */
+export default function TimetableGrid({ classId }) {
+  const [tt, setTt] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-const DAYS = ["Mon","Tue","Wed","Thu","Fri"];
+  useEffect(() => {
+    setLoading(true);
+    api
+      .getTimetableForClass(classId)
+      .then(setTt)
+      .catch((err) => {
+        console.error("Error fetching timetable:", err);
+        setTt(null);
+      })
+      .finally(() => setLoading(false));
+  }, [classId]);
 
-export default function TimetableGrid({ timetable, periodsPerDay = 8 }){
-  // build matrix
-  const matrix = DAYS.map(d => new Array(periodsPerDay).fill(null));
-  if (timetable && timetable.periods) {
-    timetable.periods.forEach(p => {
-      const d = DAYS.indexOf(p.day);
-      if (d >= 0 && p.periodIndex < periodsPerDay) {
-        matrix[d][p.periodIndex] = p;
-      }
+  if (loading) return <div className="text-center py-4">Loading...</div>;
+  if (!tt) return <div className="text-center py-4 text-red-600">No timetable generated yet</div>;
+
+  const days = tt.periods && tt.periods.length > 0
+    ? [...new Set(tt.periods.map((p) => p.day))]
+    : ["Mon", "Tue", "Wed", "Thu", "Fri"];
+
+  const maxPeriods = 8;
+
+  // Build grid: grid[day][period] = period object or null
+  const grid = {};
+  days.forEach((day) => {
+    grid[day] = {};
+    for (let i = 0; i < maxPeriods; i++) {
+      grid[day][i] = null;
+    }
+  });
+
+  if (tt.periods) {
+    tt.periods.forEach((p) => {
+      grid[p.day] = grid[p.day] || {};
+      grid[p.day][p.periodIndex] = p;
     });
   }
 
-  // helper to display subject name or fallback
-  const getLabel = (cell) => {
-    if (!cell) return "";
-    if (cell.subject && typeof cell.subject === "object") {
-      return cell.subject.name || "Sub";
-    }
-    return "Subject";
-  };
-
   return (
-    <div className="overflow-auto">
-      <table className="w-full border-collapse">
+    <div className="bg-white p-6 rounded-lg shadow border border-gray-200 overflow-x-auto">
+      <h3 className="text-lg font-semibold mb-4">Timetable</h3>
+      <table className="w-full border-collapse border border-gray-300 text-sm">
         <thead>
-          <tr>
-            <th className="p-2 bg-slate-100 text-left">Day</th>
-            {Array.from({length: periodsPerDay}).map((_,i)=>(
-              <th key={i} className="p-2 bg-slate-100 text-center">P{i+1}</th>
+          <tr className="bg-gray-100">
+            <th className="border border-gray-300 p-2">Period</th>
+            {days.map((day) => (
+              <th key={day} className="border border-gray-300 p-2 text-center">
+                {day}
+              </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {DAYS.map((day,ri)=>(
-            <tr key={day} className="border-b">
-              <td className="p-2 font-medium">{day}</td>
-              {matrix[ri].map((cell,ci)=> {
-                // show recess (break) after 2,4,6 (i.e between 2-3)
-                const isBreakAfter = (ci === 2 || ci === 4 || ci === 6);
+          {Array.from({ length: maxPeriods }, (_, i) => (
+            <tr key={i}>
+              <td className="border border-gray-300 p-2 font-semibold text-center">
+                {i + 1}
+              </td>
+              {days.map((day) => {
+                const cell = grid[day]?.[i];
                 return (
-                  <td key={ci} className="p-2 align-top text-center">
-                    <div className="min-h-[48px] flex items-center justify-center">
-                      {cell ? (
-                        <div className="text-sm">
-                          <div className="font-medium">{cell.subject?.name || getLabel(cell)}</div>
-                          <div className="text-xs text-slate-500">{cell.faculty?.name || (cell.faculty || "")}</div>
-                        </div>
-                      ) : (
-                        <div className="text-slate-400">—</div>
-                      )}
-                    </div>
-                    {isBreakAfter && <div className="text-xs text-amber-700 mt-1">⏳ Recess</div>}
+                  <td
+                    key={`${day}-${i}`}
+                    className={`border border-gray-300 p-2 text-center text-xs ${
+                      cell?.isLab ? "bg-blue-100" : "bg-white"
+                    }`}
+                  >
+                    {cell ? (
+                      <div>
+                        <div className="font-semibold">{cell.subject?.name || "–"}</div>
+                        <div className="text-gray-600">{cell.faculty?.shortName || "–"}</div>
+                      </div>
+                    ) : (
+                      "–"
+                    )}
                   </td>
                 );
               })}

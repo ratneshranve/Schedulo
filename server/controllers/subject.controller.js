@@ -1,43 +1,53 @@
-// controllers/subject.controller.js
 import "../models/connection.js";
 import Subject from "../models/Subject.js";
 
-// GET /api/subjects
 export const getAllSubjects = async (req, res, next) => {
   try {
-    const list = await Subject.find().populate("faculty");
-    res.json(list);
+    const subjects = await Subject.find()
+      .populate("faculty")
+      .populate("department");
+    res.json(subjects);
   } catch (err) {
     next(err);
   }
 };
 
-// POST /api/subjects
+export const getSubjectsByClass = async (req, res, next) => {
+  try {
+    const { department, year, section } = req.params;
+    const subjects = await Subject.find({ department, year, section })
+      .populate("faculty");
+    res.json(subjects);
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const createSubject = async (req, res, next) => {
   try {
-    const s = new Subject(req.body);
-    await s.save();
-    res.status(201).json(s);
+    const subject = new Subject(req.body);
+    await subject.save();
+    await subject.populate("faculty").populate("department");
+    res.status(201).json(subject);
   } catch (err) {
     next(err);
   }
 };
 
-// PUT /api/subjects/:id
 export const updateSubject = async (req, res, next) => {
   try {
-    const updated = await Subject.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json(updated);
+    const subject = await Subject.findByIdAndUpdate(req.params.id, req.body, { new: true })
+      .populate("faculty");
+    res.json(subject);
   } catch (err) {
     next(err);
   }
 };
 
-// DELETE /api/subjects/:id
 export const deleteSubject = async (req, res, next) => {
   try {
     await Subject.findByIdAndDelete(req.params.id);
-    res.json({ message: "Deleted" });
+    res.json({ message: "Subject deleted" });
   } catch (err) {
     next(err);
   }

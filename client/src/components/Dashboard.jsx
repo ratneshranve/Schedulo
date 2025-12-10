@@ -1,116 +1,390 @@
-import React, { useEffect, useState } from "react";
-import { getClasses, getFaculty, getSubjects, fetchTimetableForClass, generateAllTimetables } from "../api";
+// src/components/Dashboard.jsx
+import { useEffect, useState } from "react";
+import { api } from "../api";
+import DepartmentForm from "./DepartmentForm";
+import FacultyForm from "./FacultyForm";
+import SubjectForm from "./SubjectForm";
+import ClassForm from "./ClassForm";
+import RoomForm from "./RoomForm";
+import ConfigForm from "./ConfigForm";
 import ClassCard from "./ClassCard";
 import TimetableGrid from "./TimetableGrid";
+import FacultyTimetableView from "./FacultyTimetableView";
+import DiagnosticsModal from "./DiagnosticsModal";
 
-export default function Dashboard(){
+export default function Dashboard() {
+  const [currentStep, setCurrentStep] = useState(1);
   const [classes, setClasses] = useState([]);
-  const [faculty, setFaculty] = useState([]);
-  const [subjects, setSubjects] = useState([]);
+  const [faculties, setFaculties] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
-  const [timetable, setTimetable] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [log, setLog] = useState([]);
+  const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [generating, setGenerating] = useState(false);
+  const [error, setError] = useState(null);
+  const [generationSuccess, setGenerationSuccess] = useState(false);
 
-  useEffect(()=>{ loadAll(); },[]);
-
-  async function loadAll(){
-    setLoading(true);
+  const reload = async () => {
     try {
-      const cls = await getClasses();
-      const fac = await getFaculty();
-      const sub = await getSubjects();
-      setClasses(cls || []);
-      setFaculty(fac || []);
-      setSubjects(sub || []);
-      if (cls && cls.length) setSelectedClass(cls[0]);
-    } catch(err){ console.error(err); }
-    setLoading(false);
-  }
+      const [classList, facultyList] = await Promise.all([
+        api.getClasses(),
+        api.getFaculty()
+      ]);
+      setClasses(classList);
+      setFaculties(facultyList);
+    } catch (err) {
+      console.error("Error loading data:", err);
+    }
+  };
 
-  useEffect(()=>{
-    if (!selectedClass) return;
-    (async ()=>{
-      setLoading(true);
-      const tt = await fetchTimetableForClass(selectedClass._id);
-      setTimetable(tt || null);
-      setLoading(false);
-    })();
-  },[selectedClass]);
+  useEffect(() => {
+    reload();
+  }, []);
 
-  async function handleGenerateAll(){
-    if(!window.confirm("This will generate timetables for ALL classes (may take a while). Continue?")) return;
-    setLog([]);
-    setLoading(true);
+  const handleGenerate = async () => {
+    setGenerating(true);
+    setError(null);
+    setGenerationSuccess(false);
     try {
-      setLog(l => [...l, "Requesting server to generate timetables..."]);
-      const result = await generateAllTimetables({ periodsPerDay: 8 });
-      setLog(l => [...l, "Server response received."]);
-      if (result && result.timetables) {
-        setLog(l => [...l, `Generated ${result.timetables.length} timetables.`]);
-        // reload classes and current selected timetable
-        await loadAll();
-        if (selectedClass) {
-          const tt = await fetchTimetableForClass(selectedClass._id);
-          setTimetable(tt || null);
-        }
+      const res = await api.generateAll({ periodsPerDay: 8 });
+      if (res.success) {
+        setGenerationSuccess(true);
+        setTimeout(() => setCurrentStep(8), 1500);
+        reload();
       } else {
-        setLog(l => [...l, JSON.stringify(result)]);
+        setError(res.diagnostics || res.error);
       }
     } catch (err) {
-      setLog(l => [...l, "Error: " + (err.message || err)]);
+      setError(err);
+      console.error("Generation error:", err);
+    } finally {
+      setGenerating(false);
     }
-    setLoading(false);
-  }
+  };
+
+  const steps = [
+    { num: 1, title: "Departments", desc: "Create departments" },
+    { num: 2, title: "Faculty", desc: "Add faculty members" },
+    { num: 3, title: "Rooms", desc: "Add classrooms & labs" },
+    { num: 4, title: "Subjects", desc: "Create subjects" },
+    { num: 5, title: "Classes", desc: "Create classes" },
+    { num: 6, title: "Configuration", desc: "System settings" },
+    { num: 7, title: "Generate", desc: "Create timetables" },
+    { num: 8, title: "View Timetables", desc: "See results" }
+  ];
 
   return (
-    <div className="grid grid-cols-12 gap-6">
-      <aside className="col-span-3 bg-white p-4 rounded-lg shadow">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="font-semibold">Classes</h2>
-          <button onClick={handleGenerateAll} className="px-3 py-1 bg-rose-500 text-white rounded hover:bg-rose-600">Generate All</button>
-        </div>
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <div className="bg-blue-900 text-white p-6">
+        <h1 className="text-3xl font-bold">Schedulo - Timetable Generator</h1>
+        <p className="text-blue-200">Complete college timetable generation system</p>
+      </div>
 
-        {loading && <div className="text-sm text-slate-500 mb-2">Loading...</div>}
-
-        <div className="space-y-2">
-          {classes.length === 0 && <div className="text-slate-500">No classes found</div>}
-          {classes.map(c => (
-            <ClassCard
-              key={c._id}
-              cls={c}
-              selected={selectedClass && selectedClass._id === c._id}
-              onSelect={() => setSelectedClass(c)}
-            />
+      {/* Progress Steps */}
+      <div className="bg-white border-b px-6 py-4">
+        <div className="flex justify-between items-center">
+          {steps.map((step, idx) => (
+            <div key={step.num} className="flex items-center">
+              <button
+                onClick={() => setCurrentStep(step.num)}
+                className={`flex flex-col items-center cursor-pointer ${
+                  currentStep >= step.num ? "opacity-100" : "opacity-50"
+                }`}
+              >
+                <div
+                  className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-white mb-1 ${
+                    currentStep === step.num
+                      ? "bg-blue-600 ring-2 ring-blue-400"
+                      : currentStep > step.num
+                      ? "bg-green-500"
+                      : "bg-gray-400"
+                  }`}
+                >
+                  {currentStep > step.num ? "✓" : step.num}
+                </div>
+                <span className="text-xs font-semibold">{step.title}</span>
+              </button>
+              {idx < steps.length - 1 && (
+                <div
+                  className={`flex-1 h-1 mx-2 ${
+                    currentStep > step.num ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                ></div>
+              )}
+            </div>
           ))}
         </div>
+      </div>
 
-        <div className="mt-6">
-          <h3 className="text-sm font-medium mb-2">Activity Log</h3>
-          <div className="bg-slate-50 h-40 overflow-auto p-2 rounded border">
-            {log.map((l,i)=> <div key={i} className="text-xs text-slate-600">{l}</div>)}
-          </div>
-        </div>
-      </aside>
-
-      <section className="col-span-9">
-        <div className="bg-white p-4 rounded-lg shadow">
-          {selectedClass ? (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">{selectedClass.name} — Timetable</h2>
-                <div className="text-sm text-slate-500">Periods/Day: {selectedClass.periodsPerDay || 8}</div>
+      {/* Content */}
+      <div className="p-8 max-w-7xl mx-auto">
+        {/* Step 1: Departments */}
+        {currentStep === 1 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 1: Create Departments</h2>
+              <p className="text-gray-600">Create departments that will contain classes.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <DepartmentForm onCreated={reload} />
+              <div className="bg-white p-6 rounded shadow">
+                <h3 className="text-lg font-bold mb-4">Departments Created</h3>
+                <p className="text-gray-600">Departments will appear here after creation.</p>
               </div>
+            </div>
+            <button
+              onClick={() => setCurrentStep(2)}
+              className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+            >
+              Next: Add Faculty →
+            </button>
+          </div>
+        )}
 
-              {timetable ? (
-                <TimetableGrid timetable={timetable} periodsPerDay={selectedClass.periodsPerDay || 8} />
-              ) : (
-                <div className="text-slate-500">No timetable found. Click Generate All to create timetables.</div>
+        {/* Step 2: Faculty */}
+        {currentStep === 2 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 2: Add Faculty Members</h2>
+              <p className="text-gray-600">Create faculty members with their availability and load limits.</p>
+            </div>
+            <div className="bg-white p-6 rounded shadow">
+              <FacultyForm onCreated={reload} />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(3)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Next: Add Rooms →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Rooms */}
+        {currentStep === 3 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 3: Add Classrooms & Labs</h2>
+              <p className="text-gray-600">Create rooms (classrooms for lectures, labs for practical sessions).</p>
+            </div>
+            <div className="bg-white p-6 rounded shadow">
+              <RoomForm onCreated={reload} />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(4)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Next: Add Subjects →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 4: Subjects */}
+        {currentStep === 4 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 4: Create Subjects</h2>
+              <p className="text-gray-600">Define subjects with their type (lecture/lab), sessions per week, and assigned faculty.</p>
+            </div>
+            <div className="bg-white p-6 rounded shadow">
+              <SubjectForm onCreated={reload} />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(3)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(5)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Next: Create Classes →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 5: Classes */}
+        {currentStep === 5 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 5: Create Classes</h2>
+              <p className="text-gray-600">Create classes by selecting department, year, and section, then assign subjects.</p>
+            </div>
+            <div className="bg-white p-6 rounded shadow">
+              <ClassForm onCreated={reload} />
+            </div>
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(4)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(6)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Next: System Configuration →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 6: Configuration */}
+        {currentStep === 6 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 6: System Configuration</h2>
+              <p className="text-gray-600">Configure institute timings, breaks, and constraints.</p>
+            </div>
+            <ConfigForm onCreated={reload} />
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(5)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(7)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Next: Generate Timetables →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 7: Generate */}
+        {currentStep === 7 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 7: Generate Timetables</h2>
+              <p className="text-gray-600">Click the button below to generate conflict-free timetables for all classes and faculty.</p>
+            </div>
+            <div className="bg-white p-8 rounded shadow text-center">
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className={`px-12 py-4 rounded font-bold text-lg text-white ${
+                  generating
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700"
+                }`}
+              >
+                {generating ? "Generating Timetables..." : "Generate All Timetables"}
+              </button>
+              {generationSuccess && (
+                <div className="mt-4 p-4 bg-green-100 text-green-800 rounded">
+                  ✓ Timetables generated successfully!
+                </div>
               )}
-            </>
-          ) : <div>Select a class to view timetable.</div>}
-        </div>
-      </section>
+            </div>
+            {error && <DiagnosticsModal error={error} onClose={() => setError(null)} />}
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(6)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Step 8: View Timetables */}
+        {currentStep === 8 && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Step 8: View Timetables</h2>
+              <p className="text-gray-600">Browse generated class and faculty timetables.</p>
+            </div>
+
+            {/* Class Timetables */}
+            <div className="space-y-4">
+              <h3 className="text-xl font-bold">Class Timetables</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {classes.map((cls) => (
+                  <ClassCard
+                    key={cls._id}
+                    cls={cls}
+                    isSelected={selectedClass?._id === cls._id}
+                    onSelect={setSelectedClass}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {selectedClass && (
+              <div className="bg-white p-6 rounded shadow space-y-4">
+                <h3 className="text-lg font-bold">Timetable: {selectedClass.name}</h3>
+                <TimetableGrid classId={selectedClass._id} />
+              </div>
+            )}
+
+            {/* Faculty Timetables */}
+            <div className="space-y-4 mt-8">
+              <h3 className="text-xl font-bold">Faculty Timetables</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {faculties.map((fac) => (
+                  <div
+                    key={fac._id}
+                    onClick={() => setSelectedFaculty(fac)}
+                    className={`p-4 rounded cursor-pointer border-2 transition ${
+                      selectedFaculty?._id === fac._id
+                        ? "border-blue-600 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                    }`}
+                  >
+                    <div className="font-bold">{fac.name}</div>
+                    <div className="text-sm text-gray-600">{fac.email}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {selectedFaculty && (
+              <div className="bg-white p-6 rounded shadow space-y-4">
+                <h3 className="text-lg font-bold">Timetable: {selectedFaculty.name}</h3>
+                <FacultyTimetableView facultyId={selectedFaculty._id} />
+              </div>
+            )}
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => setCurrentStep(7)}
+                className="bg-gray-600 text-white px-6 py-3 rounded font-semibold hover:bg-gray-700"
+              >
+                ← Back
+              </button>
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="bg-blue-600 text-white px-6 py-3 rounded font-semibold hover:bg-blue-700"
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
