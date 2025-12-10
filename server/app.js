@@ -16,6 +16,7 @@ import timetableRouter from './routes/timetable.routes.js';
 import roomRouter from './routes/room.routes.js';
 import configRouter from './routes/config.routes.js';
 import departmentRouter from './routes/department.routes.js';
+import diagnosticRouter from './routes/diagnostic.routes.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use("/api/timetable", timetableRouter);
 app.use("/api/rooms", roomRouter);
 app.use("/api/config", configRouter);
 app.use("/api/departments", departmentRouter);
+app.use("/api/diagnostic", diagnosticRouter);
 
 app.get("/", (_, res) => res.send("Schedulo backend running"));
 

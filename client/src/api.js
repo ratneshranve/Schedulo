@@ -107,7 +107,10 @@ export const api = {
     fetch(`${API_BASE}/timetable/class/${id}`).then(handleResponse),
   getTimetableForFaculty: (id) =>
     fetch(`${API_BASE}/timetable/faculty/${id}`).then(handleResponse),
-  getAllTimetables: () => fetch(`${API_BASE}/timetable/all`).then(handleResponse)
+  getAllTimetables: () => fetch(`${API_BASE}/timetable/all`).then(handleResponse),
+
+  // Diagnostic
+  getDataSummary: () => fetch(`${API_BASE}/diagnostic/data-summary`).then(handleResponse)
 };
 
 async function handleResponse(res) {
