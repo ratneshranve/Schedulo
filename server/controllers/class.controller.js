@@ -6,6 +6,7 @@ export const getAllClasses = async (req, res, next) => {
     const classes = await Class.find()
       .populate("department")
       .populate("subjects");
+    console.log(`[ClassController] getAllClasses found ${classes.length} classes`);
     res.json(classes);
   } catch (err) {
     next(err);
@@ -31,6 +32,7 @@ export const createClass = async (req, res, next) => {
     const cls = new Class(req.body);
     await cls.save();
     await cls.populate("department");
+    console.log(`[ClassController] Created class: ${cls._id} - Dept: ${cls.department}, Year: ${cls.year}, Section: ${cls.section}, Subjects: ${cls.subjects?.length || 0}`);
     res.status(201).json(cls);
   } catch (err) {
     next(err);

@@ -42,17 +42,26 @@ export async function generateAllTimetables(options = {}) {
     populate: { path: "faculty" }
   });
 
+  console.log(`[Scheduler] Found ${classes ? classes.length : 0} classes in database`);
+
   if (!classes || classes.length === 0) {
     const err = { 
       success: false, 
       error: "No classes found in database. Please create classes first.", 
-      diagnostics: { classCount: 0, taskCount: 0, labCount: 0 } 
+      diagnostics: { 
+        classCount: 0, 
+        taskCount: 0, 
+        labCount: 0,
+        message: "Run GET /api/classes to debug"
+      } 
     };
     throw new Error(JSON.stringify(err));
   }
 
   // Check if classes have subjects
   const classesWithSubjects = classes.filter(c => c.subjects && c.subjects.length > 0);
+  console.log(`[Scheduler] ${classesWithSubjects.length} of ${classes.length} classes have subjects`);
+  
   if (classesWithSubjects.length === 0) {
     const err = { 
       success: false, 
@@ -61,7 +70,14 @@ export async function generateAllTimetables(options = {}) {
         classCount: classes.length, 
         classesWithSubjects: 0,
         taskCount: 0, 
-        labCount: 0 
+        labCount: 0,
+        classDetails: classes.map(c => ({
+          id: c._id,
+          dept: c.department,
+          year: c.year,
+          section: c.section,
+          subjectCount: c.subjects?.length || 0
+        }))
       } 
     };
     throw new Error(JSON.stringify(err));
