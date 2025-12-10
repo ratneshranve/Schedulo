@@ -13,6 +13,14 @@ export const generateAll = async (req, res, next) => {
     // Convert to plain objects and serialize to ensure no Mongoose objects are included
     const plainTimetables = timetables.map(tt => {
       const obj = tt.toObject ? tt.toObject() : tt;
+      // ensure subject/faculty metadata are plain
+      if (obj.periods && Array.isArray(obj.periods)) {
+        obj.periods = obj.periods.map(p => ({
+          ...p,
+          subject: p.subject && p.subject.name ? { _id: p.subject._id, name: p.subject.name, code: p.subject.code } : p.subject,
+          faculty: p.faculty && p.faculty.name ? { _id: p.faculty._id, name: p.faculty.name } : p.faculty
+        }));
+      }
       return JSON.parse(JSON.stringify(obj));
     });
     res.status(201).json({ success: true, timetables: plainTimetables, message: "Timetables generated successfully" });

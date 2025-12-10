@@ -5,7 +5,8 @@ const ConfigSchema = new mongoose.Schema({
   workingDays: { type: [String], default: ["Mon", "Tue", "Wed", "Thu", "Fri"] },
   periodsPerDay: { type: Number, default: 8, min: 4, max: 12 },
   periodDuration: { type: Number, default: 50, min: 30, max: 120 },
-  instituteStartTime: { type: String, default: "08:00" },
+  instituteName: { type: String, default: "Institute Name" },
+  instituteStartTime: { type: String, default: "09:45" },
   instituteEndTime: { type: String, default: "17:00" },
   breaks: [
     {

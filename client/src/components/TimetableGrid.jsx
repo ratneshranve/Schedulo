@@ -38,7 +38,10 @@ export default function TimetableGrid({ classId }) {
   if (tt.periods) {
     tt.periods.forEach((p) => {
       grid[p.day] = grid[p.day] || {};
-      grid[p.day][p.periodIndex] = p;
+      // normalize nested subject/faculty if objects with _id
+      const subj = p.subject && p.subject._id ? { ...p.subject } : p.subject;
+      const fac = p.faculty && p.faculty._id ? { ...p.faculty } : p.faculty;
+      grid[p.day][p.periodIndex] = { ...p, subject: subj, faculty: fac };
     });
   }
 

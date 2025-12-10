@@ -34,6 +34,37 @@ export async function generateAllTimetables(options = {}) {
   const labAllowedStarts = config.labAllowedStarts || [1, 3, 5, 7]; // 1-based
   const maxConsecutivePeriodsForFaculty = config.maxConsecutivePeriodsForFaculty || 3;
 
+  // Helper: compute period start/end times based on config and breaks
+  function parseTime(t) {
+    const [hh, mm] = (t || "09:45").split(":").map(Number);
+    return { hh, mm };
+  }
+
+  function timeToMinutes(tm) {
+    return tm.hh * 60 + tm.mm;
+  }
+
+  function minutesToTime(m) {
+    const hh = Math.floor(m / 60);
+    const mm = m % 60;
+    return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+  }
+
+  // Build period times array (accounts for configured breaks)
+  const periodTimes = [];
+  let currentMinutes = timeToMinutes(parseTime(config.instituteStartTime || "09:45"));
+  for (let i = 0; i < periodsPerDay; i++) {
+    const start = minutesToTime(currentMinutes);
+    const end = minutesToTime(currentMinutes + periodDuration);
+    periodTimes.push({ start, end });
+    currentMinutes += periodDuration;
+    // apply any break that comes after this period (1-based)
+    const brk = (breaks || []).find(b => Number(b.afterPeriod) === i + 1);
+    if (brk && brk.duration) {
+      currentMinutes += Number(brk.duration);
+    }
+  }
+
   console.log(`[Scheduler] Starting global timetable generation: ${days.length} days, ${periodsPerDay} periods/day`);
 
   // Load classes with subjects and faculty
@@ -87,6 +118,18 @@ export async function generateAllTimetables(options = {}) {
   const rooms = await Room.find({});
   const labRooms = rooms.filter(r => r.type === "lab");
   const classRooms = rooms.filter(r => r.type === "classroom");
+
+  // Load subjects and faculties maps to include friendly metadata into generated periods
+  const subjects = await Subject.find({});
+  const subjectMap = {};
+  for (const s of subjects) {
+    subjectMap[s._id.toString()] = { _id: s._id.toString(), name: s.name, code: s.code };
+  }
+  const faculties = await Faculty.find({});
+  const facultyMap = {};
+  for (const f of faculties) {
+    facultyMap[f._id.toString()] = { _id: f._id.toString(), name: f.name };
+  }
 
   // Build tasks
   const tasks = [];
@@ -446,12 +489,13 @@ export async function generateAllTimetables(options = {}) {
           periods.push({
             day: days[d],
             periodIndex: p,
-            subject: cell.subject,
-            faculty: cell.faculty,
+            // replace ids with small metadata objects when available
+            subject: subjectMap[cell.subject] || cell.subject,
+            faculty: facultyMap[cell.faculty] || cell.faculty,
             room: null, // Simplified; could assign actual rooms
             isLab: cell.isLab,
-            startTime: null, // Could compute from config
-            endTime: null
+            startTime: periodTimes[p]?.start || null,
+            endTime: periodTimes[p]?.end || null
           });
         }
       }
@@ -491,12 +535,12 @@ export async function generateAllTimetables(options = {}) {
             periods.push({
               day: days[d],
               periodIndex: p,
-              subject: foundCell.subject,
-              class: foundCell.class,
+                subject: subjectMap[foundCell.subject] || foundCell.subject,
+                class: foundCell.class,
               room: null,
               isLab: foundCell.isLab,
-              startTime: null,
-              endTime: null
+                startTime: periodTimes[p]?.start || null,
+                endTime: periodTimes[p]?.end || null
             });
           }
         }

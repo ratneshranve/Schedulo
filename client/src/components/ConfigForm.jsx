@@ -3,10 +3,11 @@ import { api } from "../api";
 
 export default function ConfigForm({ onCreated }) {
   const [formData, setFormData] = useState({
+    instituteName: "IPS Academy",
     workingDays: ["Mon", "Tue", "Wed", "Thu", "Fri"],
     periodsPerDay: 8,
     periodDuration: 50,
-    instituteStartTime: "09:00",
+    instituteStartTime: "09:45",
     instituteEndTime: "17:00",
     breaks: [
       { name: "Recess", afterPeriod: 2, duration: 15, startTime: "10:50" },
@@ -104,6 +105,17 @@ export default function ConfigForm({ onCreated }) {
               className="w-full border rounded px-2 py-1"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-semibold">Institute Name (Header)</label>
+          <input
+            type="text"
+            name="instituteName"
+            value={formData.instituteName}
+            onChange={handleChange}
+            className="w-full border rounded px-2 py-1"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

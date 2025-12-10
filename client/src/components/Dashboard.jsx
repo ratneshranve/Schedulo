@@ -10,6 +10,7 @@ import ConfigForm from "./ConfigForm";
 import ClassCard from "./ClassCard";
 import TimetableGrid from "./TimetableGrid";
 import FacultyTimetableView from "./FacultyTimetableView";
+import PrintableTimetable from "./PrintableTimetable";
 import DiagnosticsModal from "./DiagnosticsModal";
 
 export default function Dashboard() {
@@ -17,22 +18,27 @@ export default function Dashboard() {
   const [classes, setClasses] = useState([]);
   const [faculties, setFaculties] = useState([]);
   const [departments, setDepartments] = useState([]);
+  const [config, setConfig] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedFaculty, setSelectedFaculty] = useState(null);
+  const [selectedPrintClass, setSelectedPrintClass] = useState(null);
+  const [selectedPrintFaculty, setSelectedPrintFaculty] = useState(null);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [generationSuccess, setGenerationSuccess] = useState(false);
 
   const reload = async () => {
     try {
-      const [classList, facultyList, deptList] = await Promise.all([
+      const [classList, facultyList, deptList, cfg] = await Promise.all([
         api.getClasses(),
         api.getFaculty(),
-        api.getDepartments()
+        api.getDepartments(),
+        api.getConfig()
       ]);
       setClasses(classList);
       setFaculties(facultyList);
       setDepartments(deptList);
+      setConfig(cfg);
     } catch (err) {
       console.error("Error loading data:", err);
     }
@@ -355,6 +361,23 @@ export default function Dashboard() {
             {selectedClass && (
               <div className="bg-white p-6 rounded shadow space-y-4">
                 <h3 className="text-lg font-bold">Timetable: {selectedClass.name}</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <div />
+                  <div>
+                    <button
+                      onClick={() => setSelectedPrintClass(selectedClass)}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded mr-2"
+                    >
+                      Printable / PDF
+                    </button>
+                    <button
+                      onClick={() => setSelectedClass(null)}
+                      className="bg-gray-200 px-3 py-1 rounded"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
                 <TimetableGrid classId={selectedClass._id} />
               </div>
             )}
@@ -383,7 +406,46 @@ export default function Dashboard() {
             {selectedFaculty && (
               <div className="bg-white p-6 rounded shadow space-y-4">
                 <h3 className="text-lg font-bold">Timetable: {selectedFaculty.name}</h3>
+                <div className="flex justify-between items-center mb-4">
+                  <div />
+                  <div>
+                    <button
+                      onClick={() => setSelectedPrintFaculty(selectedFaculty)}
+                      className="bg-indigo-600 text-white px-4 py-2 rounded mr-2"
+                    >
+                      Printable / PDF
+                    </button>
+                    <button
+                      onClick={() => setSelectedFaculty(null)}
+                      className="bg-gray-200 px-3 py-1 rounded"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
                 <FacultyTimetableView facultyId={selectedFaculty._id} />
+              </div>
+            )}
+
+            {selectedPrintClass && (
+              <div className="bg-white p-6 rounded shadow">
+                <PrintableTimetable
+                  type="class"
+                  referenceId={selectedPrintClass._id}
+                  referenceName={selectedPrintClass.name}
+                  config={config}
+                />
+              </div>
+            )}
+
+            {selectedPrintFaculty && (
+              <div className="bg-white p-6 rounded shadow">
+                <PrintableTimetable
+                  type="faculty"
+                  referenceId={selectedPrintFaculty._id}
+                  referenceName={selectedPrintFaculty.name}
+                  config={config}
+                />
               </div>
             )}
 
