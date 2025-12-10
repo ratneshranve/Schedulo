@@ -96,16 +96,34 @@ export async function generateAllTimetables(options = {}) {
     for (const s of c.subjects) {
       const length = s.type === "lab" ? (s.labContinuousPeriods || 2) : 1;
       const sessions = s.sessionsPerWeek || 0;
+      
+      // Handle faculty - could be array or single object
+      let facultyId = null;
+      let facultyName = "Unassigned";
+      if (s.faculty) {
+        if (Array.isArray(s.faculty)) {
+          // Use first faculty if multiple
+          if (s.faculty.length > 0 && s.faculty[0]) {
+            facultyId = s.faculty[0]._id ? s.faculty[0]._id.toString() : s.faculty[0];
+            facultyName = s.faculty[0].name || s.faculty[0];
+          }
+        } else if (typeof s.faculty === 'object' && s.faculty._id) {
+          // Single object
+          facultyId = s.faculty._id.toString();
+          facultyName = s.faculty.name;
+        }
+      }
+      
       for (let i = 0; i < sessions; i++) {
         const tid = `${c._id}_${s._id}_${i}`;
         const task = {
           tid,
           classId: c._id.toString(),
-          className: c.name,
+          className: `${c.department?.name || 'Dept'}-${c.year}-${c.section}`,
           subjectId: s._id.toString(),
           subjectName: s.name,
-          facultyId: (s.faculty && s.faculty._id) ? s.faculty._id.toString() : null,
-          facultyName: (s.faculty && s.faculty.name) ? s.faculty.name : "Unassigned",
+          facultyId,
+          facultyName,
           length,
           isLab: s.type === "lab",
           roomType: s.type === "lab" ? "lab" : "classroom"
@@ -350,8 +368,14 @@ export async function generateAllTimetables(options = {}) {
 
   async function backtrack(index) {
     attempts++;
-    if (attempts > maxAttempts) return false;
-    if (index >= tasks.length) return true;
+    if (attempts > maxAttempts) {
+      console.log(`[Scheduler] Max attempts reached: ${attempts}`);
+      return false;
+    }
+    if (index >= tasks.length) {
+      console.log(`[Scheduler] All tasks scheduled successfully!`);
+      return true;
+    }
 
     const task = tasks[index];
     const classId = task.classId;
@@ -367,7 +391,10 @@ export async function generateAllTimetables(options = {}) {
     return false;
   }
 
+  console.log(`[Scheduler] Starting backtracking with ${tasks.length} tasks...`);
   const ok = await backtrack(0);
+  console.log(`[Scheduler] Backtracking completed. Result: ${ok ? 'SUCCESS' : 'FAILED'}`);
+  console.log(`[Scheduler] Total attempts: ${attempts}`);
 
   if (!ok) {
     const diag = {
