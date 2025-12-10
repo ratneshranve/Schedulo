@@ -10,7 +10,8 @@ export const generateAll = async (req, res, next) => {
     const { days, periodsPerDay } = req.body || {};
     const timetables = await generateAllTimetables({ days, periodsPerDay });
     console.log("[TimetableController] Timetables generated successfully");
-    res.status(201).json({ success: true, timetables, message: "Timetables generated successfully" });
+    const plainTimetables = timetables.map(tt => tt.toObject ? tt.toObject() : tt);
+    res.status(201).json({ success: true, timetables: plainTimetables, message: "Timetables generated successfully" });
   } catch (err) {
     console.error("[TimetableController] Error during generation:", err.message);
     try {
@@ -37,7 +38,7 @@ export const getTimetableForClass = async (req, res, next) => {
     if (!tt) return res.status(404).json({ message: "No timetable found" });
     await tt.populate("periods.subject");
     await tt.populate("periods.faculty");
-    res.json(tt);
+    res.json(tt.toObject ? tt.toObject() : tt);
   } catch (err) {
     next(err);
   }
@@ -51,7 +52,7 @@ export const getTimetableForFaculty = async (req, res, next) => {
     if (!tt) return res.status(404).json({ message: "No faculty timetable found" });
     await tt.populate("periods.subject");
     await tt.populate("periods.faculty");
-    res.json(tt);
+    res.json(tt.toObject ? tt.toObject() : tt);
   } catch (err) {
     next(err);
   }
@@ -64,7 +65,8 @@ export const getAllTimetables = async (req, res, next) => {
       .populate("classRoom")
       .populate("periods.subject")
       .populate("periods.faculty");
-    res.json(timetables);
+    const plainTimetables = timetables.map(tt => tt.toObject ? tt.toObject() : tt);
+    res.json(plainTimetables);
   } catch (err) {
     next(err);
   }
