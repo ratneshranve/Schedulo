@@ -8,8 +8,8 @@ export default function SubjectForm({ onCreated }) {
     code: "",
     type: "lecture",
     sessionsPerWeek: 3,
-    labSizePeriods: 2,
-    faculty: null
+    labContinuousPeriods: 2,
+    faculty: []
   });
   const [faculties, setFaculties] = useState([]);
 
@@ -26,8 +26,8 @@ export default function SubjectForm({ onCreated }) {
         code: "",
         type: "lecture",
         sessionsPerWeek: 3,
-        labSizePeriods: 2,
-        faculty: null
+        labContinuousPeriods: 2,
+        faculty: []
       });
       onCreated?.();
     } catch (err) {
@@ -73,15 +73,17 @@ export default function SubjectForm({ onCreated }) {
         {form.type === "lab" && (
           <input
             type="number"
-            placeholder="Lab Size (periods)"
-            value={form.labSizePeriods}
-            onChange={(e) => setForm({ ...form, labSizePeriods: parseInt(e.target.value) })}
+            placeholder="Lab Continuous Periods"
+            value={form.labContinuousPeriods}
+            onChange={(e) => setForm({ ...form, labContinuousPeriods: parseInt(e.target.value) })}
+            min="1"
             className="w-full border border-gray-300 rounded px-3 py-2"
           />
         )}
         <select
-          value={form.faculty || ""}
-          onChange={(e) => setForm({ ...form, faculty: e.target.value || null })}
+          multiple
+          value={form.faculty}
+          onChange={(e) => setForm({ ...form, faculty: Array.from(e.target.selectedOptions, opt => opt.value) })}
           className="w-full border border-gray-300 rounded px-3 py-2"
         >
           <option value="">-- Assign Faculty (optional) --</option>

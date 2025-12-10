@@ -7,9 +7,9 @@ const SubjectSchema = new mongoose.Schema({
   type: { type: String, enum: ["lecture", "lab"], default: "lecture" },
   sessionsPerWeek: { type: Number, required: true, min: 1 },
   labContinuousPeriods: { type: Number, default: 2 },
-  department: { type: mongoose.Schema.Types.ObjectId, ref: "Department", required: true },
-  year: { type: Number, required: true },
-  section: { type: String, required: true },
+  department: { type: mongoose.Schema.Types.ObjectId, ref: "Department" },
+  year: { type: Number },
+  section: { type: String },
   faculty: [{ type: mongoose.Schema.Types.ObjectId, ref: "Faculty" }],
   preferredTime: { type: String },
   createdAt: { type: Date, default: Date.now }
