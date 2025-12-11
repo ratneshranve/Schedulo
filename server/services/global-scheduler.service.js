@@ -204,7 +204,6 @@ export async function generateAllTimetables(options = {}) {
   // Faculty tracking
   const facultyBusy = {};
   const facultyLoad = {};
-  const faculties = await Faculty.find({});
 
   for (const f of faculties) {
     const fid = f._id.toString();
